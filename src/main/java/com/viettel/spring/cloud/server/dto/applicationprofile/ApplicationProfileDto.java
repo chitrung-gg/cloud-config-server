@@ -1,6 +1,8 @@
-package com.viettel.spring.cloud.server.dto.application;
+package com.viettel.spring.cloud.server.dto.applicationprofile;
 
 import java.time.LocalDateTime;
+
+import com.viettel.spring.cloud.server.dto.application.ApplicationDto;
 
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
@@ -14,14 +16,16 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ApplicationDto {
+public class ApplicationProfileDto {
     private Long id;
 
-    @NotBlank
-    private String name;
+    private ApplicationDto application;
 
     @NotBlank
-    private String description;
+    private String profile;
+
+    @NotBlank
+    private String label;
 
     @PastOrPresent
     private LocalDateTime createdAt;

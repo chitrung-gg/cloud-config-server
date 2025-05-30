@@ -71,7 +71,7 @@ public class ApplicationService {
         return applicationRepository.findById(id)
                 .map(applicationEntity -> {
                     applicationRepository.delete(applicationEntity);
-                    logger.warn("Deleting");
+                    logger.warn("Deleting: " + ApplicationService.class);
                     return applicationMapper.convertEntityToDto(applicationEntity);
                 });
     }
