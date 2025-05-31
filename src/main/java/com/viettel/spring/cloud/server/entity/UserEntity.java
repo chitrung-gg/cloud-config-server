@@ -55,6 +55,8 @@ public class UserEntity {
     private LocalDateTime updatedAt;
 
     public enum Role {
-        ADMIN, EDITOR, VIEWER
+        ADMIN, 
+        EDITOR, 
+        VIEWER
     }
 }

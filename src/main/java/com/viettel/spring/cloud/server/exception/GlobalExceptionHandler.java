@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -67,6 +68,49 @@ public class GlobalExceptionHandler {
         }
 
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    public ResponseEntity<Object> handleInvalidDataAccessApiUsage(InvalidDataAccessApiUsageException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", HttpStatus.BAD_REQUEST.value());
+        response.put("error", "Invalid Data Access");
+        
+        String message = ex.getMessage();
+        
+        // Check if it's an enum constant error
+        if (message != null && message.contains("No enum constant")) {
+            // Extract enum class name and invalid value for more details
+            String enumClass = "unknown";
+            String invalidValue = "unknown";
+            
+            try {
+                // Extract enum class name (e.g., "UserEntity.Role")
+                if (message.contains("No enum constant ")) {
+                    String enumPart = message.substring(message.indexOf("No enum constant ") + 17);
+                    if (enumPart.contains(".")) {
+                        String[] parts = enumPart.split("\\.");
+                        if (parts.length >= 2) {
+                            enumClass = parts[parts.length - 2] + "." + parts[parts.length - 1].split(" ")[0];
+                            invalidValue = parts[parts.length - 1];
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Keep default values if parsing fails
+            }
+            
+            response.put("message", "Invalid enum value provided. The value does not exist in the enum definition.");
+            response.put("enumClass", enumClass);
+            response.put("invalidValue", invalidValue);
+            response.put("hint", "Please verify the enum value is spelled correctly and exists in the enum definition.");
+        } else if (message != null && message.contains("enum")) {
+            response.put("message", "Invalid enum value provided. Please check the allowed values.");
+        } else {
+            response.put("message", "Invalid data access operation occurred.");
+        }
+        
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

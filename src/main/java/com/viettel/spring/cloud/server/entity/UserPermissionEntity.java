@@ -1,6 +1,7 @@
 package com.viettel.spring.cloud.server.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -27,7 +28,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "user_permissions", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {})
+    @UniqueConstraint(columnNames = {"user_id", "application_profile_id", "permission"})
 })
 public class UserPermissionEntity {
     @Id
@@ -44,7 +45,7 @@ public class UserPermissionEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Permission permission;
+    private List<Permission> permission;
 
     @CreatedDate
     private LocalDateTime createdAt;
@@ -53,6 +54,9 @@ public class UserPermissionEntity {
     private LocalDateTime updatedAt;
 
     public enum Permission {
-        READ, WRITE, DELETE
+        NO_ACCESS, 
+        READ, 
+        WRITE,
+        DELETE
     }
 }
