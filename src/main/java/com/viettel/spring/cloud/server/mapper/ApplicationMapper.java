@@ -19,21 +19,25 @@ public interface ApplicationMapper {
 
     UpdateApplicationDto convertEntityToUpdateDto(ApplicationEntity applicationEntity);
 
+    @Mapping(target = "applicationProfile", ignore = true)
     ApplicationEntity convertDtoToEntity(ApplicationDto applicationDto);
-
+    
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "applicationProfile", ignore = true)
     ApplicationEntity convertCreateDtoToEntity(CreateApplicationDto createApplicationDto);
-
+    
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "applicationProfile", ignore = true)
     ApplicationEntity convertUpdateDtoToEntity(UpdateApplicationDto updateApplicationDto);
-
+    
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "applicationProfile", ignore = true)
     void updateEntityFromDto(UpdateApplicationDto updateApplicationDto, @MappingTarget ApplicationEntity applicationEntity);
 }

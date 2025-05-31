@@ -64,7 +64,7 @@ public class ApplicationProfileController {
         return ResponseEntity.of(applicationProfileService.deleteApplicationProfile(id));
     }
 
-    @GetMapping("/by-application/{applicationId}")
+    @GetMapping("/application/{applicationId}")
     public ResponseEntity<List<ApplicationProfileDto>> getProfilesByApplicationId(@PathVariable Long applicationId) {
         return ResponseEntity.status(HttpStatus.OK).body(applicationProfileService.findProfilesByApplicationId(applicationId));
     }

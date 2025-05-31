@@ -22,6 +22,7 @@ import com.viettel.spring.cloud.server.repository.ApplicationRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,6 +68,7 @@ public class ApplicationProfileService {
                 .map(applicationProfileMapper::convertEntityToDto).collect(Collectors.toList());
     }
 
+    @Transactional
     public CreateApplicationProfileDto createApplicationProfile(CreateApplicationProfileDto createApplicationProfileDto) {
         ApplicationEntity applicationEntity = applicationRepository.findById(createApplicationProfileDto.getApplicationId()).orElseThrow(() -> new EntityNotFoundException("Application not found with id: " + createApplicationProfileDto.getApplicationId()));
 
@@ -80,6 +82,7 @@ public class ApplicationProfileService {
         return applicationProfileMapper.convertEntityToCreateDto(createdApplicationProfileEntity);
     }
 
+    @Transactional
     public Optional<UpdateApplicationProfileDto> updateApplicationProfile(Long id, UpdateApplicationProfileDto updateApplicationProfileDto) {
         return applicationProfileRepository.findById(id)
                 .map(applicationProfileEntity -> {
@@ -99,6 +102,7 @@ public class ApplicationProfileService {
                 });
     }
 
+    @Transactional
     public Optional<ApplicationProfileDto> deleteApplicationProfile(Long id) {
         return applicationProfileRepository.findById(id)
                 .map(applicationProfileEntity -> {

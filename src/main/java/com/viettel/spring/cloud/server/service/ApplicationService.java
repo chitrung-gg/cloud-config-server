@@ -17,6 +17,7 @@ import com.viettel.spring.cloud.server.entity.ApplicationEntity;
 import com.viettel.spring.cloud.server.mapper.ApplicationMapper;
 import com.viettel.spring.cloud.server.repository.ApplicationRepository;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -48,6 +49,7 @@ public class ApplicationService {
                 .map(applicationMapper::convertEntityToDto);
     }
 
+    @Transactional
     public CreateApplicationDto createApplication(CreateApplicationDto createApplicationDto) {
         ApplicationEntity applicationEntity = applicationMapper.convertCreateDtoToEntity(createApplicationDto);
         applicationEntity.setCreatedAt(LocalDateTime.now());
@@ -56,6 +58,7 @@ public class ApplicationService {
         return applicationMapper.convertEntityToCreateDto(createdApplicationEntity);
     }
 
+    @Transactional
     public Optional<UpdateApplicationDto> updateApplication(Long id, UpdateApplicationDto updateApplicationDto) {
         return applicationRepository.findById(id)
                 .map(applicationEntity -> {
@@ -67,6 +70,7 @@ public class ApplicationService {
                 });
     }
 
+    @Transactional
     public Optional<ApplicationDto> deleteApplication(Long id) {
         return applicationRepository.findById(id)
                 .map(applicationEntity -> {

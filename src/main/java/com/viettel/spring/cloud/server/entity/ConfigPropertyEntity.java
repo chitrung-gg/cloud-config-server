@@ -1,20 +1,17 @@
 package com.viettel.spring.cloud.server.entity;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -27,26 +24,32 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "application_profiles", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"application_id", "profile", "label"})
+@Table(name = "config_properties", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"key"})
 })
-public class ApplicationProfileEntity {
+public class ConfigPropertyEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "application_id", nullable = false)
-    private ApplicationEntity application;
-
-    @OneToMany(mappedBy = "applicationProfile")
-    private List<ConfigPropertyEntity> configProperty;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "profile_id", nullable = false)
+    private ApplicationProfileEntity applicationProfile;
 
     @Column(nullable = false)
-    private String profile;
+    private String key;
+    
+    @Column(nullable = false)
+    private String value;
 
     @Column(nullable = false)
-    private String label = "main";
+    private String format;
+    
+    // @Column(name = "encrypted")
+    // private Boolean encrypted = false;
+    
+    @Column(nullable = false)
+    private String description;
 
     @CreatedDate
     private LocalDateTime createdAt;

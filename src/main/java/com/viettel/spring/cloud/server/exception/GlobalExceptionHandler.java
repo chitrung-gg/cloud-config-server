@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -48,6 +49,24 @@ public class GlobalExceptionHandler {
         response.put("message", "HTTP method not supported for this endpoint: " + ex.getMethod());
 
         return new ResponseEntity<>(response, HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Object> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", HttpStatus.CONFLICT.value());
+        response.put("error", "Data Integrity Violation");
+        
+        String message = ex.getMostSpecificCause().getMessage();
+        
+        // Gợi ý: nếu bạn muốn lọc hoặc tùy chỉnh thông báo rõ hơn
+        if (message != null && message.contains("duplicate key value")) {
+            response.put("message", "Duplicated value: a record with the same unique key already exists.");
+        } else {
+            response.put("message", "Data integrity violation occurred.");
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
