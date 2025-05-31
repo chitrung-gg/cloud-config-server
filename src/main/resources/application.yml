@@ -19,22 +19,33 @@ spring:
               '[order_inserts]': true  # Order inserts for Hibernate
               '[order_updates]': true  # Order updates for Hibernate
   profiles:
-    active: jdbc, git
+    active: jdbc
   
   cloud:
     config:
       server:
         jdbc:
-          sql: SELECT key, value FROM configuration_entries WHERE application=? AND profile=? AND label=?
-        git:
-          uri: file:///../../../
-          clone-on-start: true
-          default-label: main
-          timeout: 10
+          enabled: false
+        # git:
+        #   uri: file:///../../../
+        #   clone-on-start: true
+        #   default-label: main
+        #   timeout: 10
 
   output:
     ansi:
       enabled: always
+  
+  threads:
+    virtual:
+      enabled: true
+
+springdoc:
+  api-docs:
+    path: /openapi/swagger/docs/api-docs
+  swagger-ui:
+    path: /openapi/swagger/docs/swagger-ui.html
+
 
 server:
   port: 8088
