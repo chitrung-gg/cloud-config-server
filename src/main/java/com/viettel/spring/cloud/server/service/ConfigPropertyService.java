@@ -45,6 +45,9 @@ public class ConfigPropertyService {
     @Autowired
     private final EntityManager entityManager;
 
+    @Autowired
+    private final ConfigVersionService configVersionService;
+
     private static final Logger logger = LoggerFactory.getLogger(ConfigPropertyService.class);
 
     public List<ConfigPropertyDto> getAllConfigProperties() {
@@ -94,9 +97,12 @@ public class ConfigPropertyService {
                     if (updateConfigPropertyDto.getApplicationProfileId() != null) {
                         ApplicationProfileEntity applicationProfileEntity = applicationProfileRepository.findById(updateConfigPropertyDto.getApplicationProfileId()).orElseThrow(() -> new EntityNotFoundException("ApplicationProfile not found with id: " + updateConfigPropertyDto.getApplicationProfileId()));
                         
+                        
                         configPropertyEntity.setApplicationProfile(applicationProfileEntity);
                     }
 
+                    configVersionService.saveSnapshot(configPropertyEntity.getApplicationProfile().getId(), "Tesstt", "Time: " + configPropertyEntity.getApplicationProfile().getUpdatedAt());
+                    
                     configPropertyMapper.updateEntityFromDto(updateConfigPropertyDto, configPropertyEntity);
 
                     configPropertyEntity.setUpdatedAt(LocalDateTime.now());

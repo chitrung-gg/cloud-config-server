@@ -13,4 +13,5 @@ public interface ConfigPropertyRepository extends JpaRepository<ConfigPropertyEn
     Optional<ConfigPropertyEntity> findByKey(String key);
     List<ConfigPropertyEntity> findByValue(String value);
     List<ConfigPropertyEntity> findByFormat(String format);
+    List<ConfigPropertyEntity> findAllByApplicationProfileId(Long profileId);
 }

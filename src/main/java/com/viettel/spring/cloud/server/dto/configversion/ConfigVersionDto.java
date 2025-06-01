@@ -1,0 +1,38 @@
+package com.viettel.spring.cloud.server.dto.configversion;
+
+import java.time.LocalDateTime;
+
+import com.viettel.spring.cloud.server.dto.applicationprofile.ApplicationProfileDto;
+
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PastOrPresent;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ConfigVersionDto {
+    private Long id;
+
+    private ApplicationProfileDto applicationProfile;
+
+    @NotBlank
+    private String configSnapshot;
+
+    @NotBlank
+    private String versionNote;
+
+    @NotBlank 
+    private String createdBy;
+
+    @PastOrPresent
+    private LocalDateTime createdAt;
+
+    @FutureOrPresent
+    private LocalDateTime updatedAt;
+}
