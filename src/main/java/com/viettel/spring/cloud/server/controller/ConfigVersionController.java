@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viettel.spring.cloud.server.dto.configproperty.ConfigPropertyDto;
 import com.viettel.spring.cloud.server.dto.configversion.ConfigVersionDto;
 import com.viettel.spring.cloud.server.dto.configversion.CreateConfigVersionDto;
 import com.viettel.spring.cloud.server.dto.configversion.UpdateConfigVersionDto;
@@ -57,5 +58,10 @@ public class ConfigVersionController {
     @GetMapping("/application-profile/{applicationProfileId}")
     public ResponseEntity<List<ConfigVersionDto>> getProfilesByApplicationProfileId(@PathVariable Long applicationProfileId) {
         return ResponseEntity.status(HttpStatus.OK).body(configVersionService.findConfigVersionByApplicationProfileId(applicationProfileId));
+    }
+
+    @PostMapping("/{versionId}/restore")
+    public ResponseEntity<List<ConfigPropertyDto>> restoreVersion(@PathVariable Long versionId) {
+        return ResponseEntity.status(HttpStatus.OK).body(configVersionService.restoreSnapshot(versionId));
     }
 }

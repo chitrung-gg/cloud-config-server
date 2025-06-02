@@ -3,12 +3,19 @@ package com.viettel.spring.cloud.server.service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.bus.endpoint.RefreshBusEndpoint;
+import org.springframework.cloud.bus.event.Destination;
+import org.springframework.cloud.bus.event.RefreshRemoteApplicationEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.viettel.spring.cloud.server.dto.configproperty.ConfigPropertyDto;
 import com.viettel.spring.cloud.server.dto.configproperty.CreateConfigPropertyDto;
@@ -48,6 +55,12 @@ public class ConfigPropertyService {
     @Autowired
     private final ConfigVersionService configVersionService;
 
+    @Autowired
+    private final ApplicationEventPublisher applicationEventPublisher;
+
+    @Autowired
+    private final RefreshBusEndpoint refreshBusEndpoint;
+
     private static final Logger logger = LoggerFactory.getLogger(ConfigPropertyService.class);
 
     public List<ConfigPropertyDto> getAllConfigProperties() {
@@ -86,7 +99,17 @@ public class ConfigPropertyService {
         configPropertyEntity.setCreatedAt(LocalDateTime.now());
         configPropertyEntity.setUpdatedAt(LocalDateTime.now());
 
+        configVersionService.saveSnapshot(configPropertyEntity.getApplicationProfile().getId(), "Tesstt", "Time: " + configPropertyEntity.getApplicationProfile().getUpdatedAt());
+        
         ConfigPropertyEntity createdConfigPropertyEntity = configPropertyRepository.save(configPropertyEntity);
+        // Use Destination.ServiceMatcher for broadcast
+        Destination destination = null; // null = broadcast
+        applicationEventPublisher.publishEvent(new RefreshRemoteApplicationEvent(
+            this,
+            "config-server",                       // Tên ứng dụng phát đi (trùng spring.application.name)
+            destination     
+        ));
+
         return configPropertyMapper.convertEntityToCreateDto(createdConfigPropertyEntity);
     }
 
@@ -108,6 +131,21 @@ public class ConfigPropertyService {
                     configPropertyEntity.setUpdatedAt(LocalDateTime.now());
 
                     ConfigPropertyEntity updatedConfigPropertyEntity = configPropertyRepository.save(configPropertyEntity);
+
+                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            CompletableFuture.runAsync(() -> {
+                                try {
+                                    // Thread.sleep(100); // 100ms delay
+                                    refreshBusEndpoint.busRefreshWithDestination(new String[]{"**"});
+                                    log.info("Bus refresh sent successfully");
+                                } catch (Exception e) {
+                                    log.error("Failed to send bus refresh", e);
+                                }
+                            });
+                        }
+                    });
 
                     return configPropertyMapper.convertEntityToUpdateDto(updatedConfigPropertyEntity);
                 });

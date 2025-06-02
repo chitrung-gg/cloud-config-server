@@ -30,6 +30,8 @@ public class ConfigVersionDto {
     @NotBlank 
     private String createdBy;
 
+    private String snapshotHash;
+
     @PastOrPresent
     private LocalDateTime createdAt;
 

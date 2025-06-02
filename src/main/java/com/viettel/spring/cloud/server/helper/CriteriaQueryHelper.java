@@ -9,11 +9,13 @@ import org.springframework.stereotype.Component;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.From;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Root;
+import jakarta.transaction.Transactional;
 import jakarta.persistence.criteria.Predicate;
 
 @Component
@@ -29,6 +31,19 @@ public class CriteriaQueryHelper {
         query.where(predicate);
 
         return em.createQuery(query).getResultList();
+    }
+
+    @Transactional
+    public <T> int deleteByJoinFilter(EntityManager em, Class<T> entityClass, String joinField, String joinColumn, Object value) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaDelete<T> delete = cb.createCriteriaDelete(entityClass);
+        Root<T> root = delete.from(entityClass);
+
+        Join<Object, Object> join = root.join(joinField);
+        Predicate predicate = cb.equal(join.get(joinColumn), value);
+        delete.where(predicate);
+
+        return em.createQuery(delete).executeUpdate();
     }
 
     public <T> List<T> findByNestedJoinsWithConditions(

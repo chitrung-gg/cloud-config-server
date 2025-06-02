@@ -1,19 +1,28 @@
 package com.viettel.spring.cloud.server.service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.bus.endpoint.RefreshBusEndpoint;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.viettel.spring.cloud.server.dto.configproperty.ConfigPropertyDto;
+import com.viettel.spring.cloud.server.dto.configproperty.ConfigPropertySnapshotDto;
 import com.viettel.spring.cloud.server.dto.configversion.ConfigVersionDto;
 import com.viettel.spring.cloud.server.dto.configversion.CreateConfigVersionDto;
 import com.viettel.spring.cloud.server.dto.configversion.UpdateConfigVersionDto;
@@ -21,6 +30,7 @@ import com.viettel.spring.cloud.server.entity.ApplicationProfileEntity;
 import com.viettel.spring.cloud.server.entity.ConfigPropertyEntity;
 import com.viettel.spring.cloud.server.entity.ConfigVersionEntity;
 import com.viettel.spring.cloud.server.helper.CriteriaQueryHelper;
+import com.viettel.spring.cloud.server.mapper.ConfigPropertyMapper;
 import com.viettel.spring.cloud.server.mapper.ConfigVersionMapper;
 import com.viettel.spring.cloud.server.repository.ApplicationProfileRepository;
 import com.viettel.spring.cloud.server.repository.ConfigPropertyRepository;
@@ -29,6 +39,7 @@ import com.viettel.spring.cloud.server.repository.ConfigVersionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import jakarta.xml.bind.DatatypeConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -49,10 +60,19 @@ public class ConfigVersionService {
     private final ConfigVersionMapper configVersionMapper;
 
     @Autowired
+    private final ConfigPropertyMapper configPropertyMapper;
+
+    @Autowired
     private final CriteriaQueryHelper criteriaQueryHelper;
 
     @Autowired
     private final EntityManager entityManager;
+
+    @Autowired
+    private final RefreshBusEndpoint refreshBusEndpoint;
+
+    @Autowired
+    private final ObjectMapper objectMapper;
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigVersionService.class);
 
@@ -125,29 +145,32 @@ public class ConfigVersionService {
             .collect(Collectors.toList());
     }
 
+    private String calculateHash(String json) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(json.getBytes(StandardCharsets.UTF_8));
+            return DatatypeConverter.printHexBinary(hashBytes).toLowerCase();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error calculating SHA-256 hash", e);
+        }
+    }
+
     
-    public void saveSnapshot(Long profileId, String usernamePlaceholder, String versionNote) {
-        ApplicationProfileEntity profile = applicationProfileRepository.findById(profileId)
-            .orElseThrow(() -> new EntityNotFoundException("ApplicationProfile not found with id: " + profileId));
+    public void saveSnapshot(Long applicationProfileId, String usernamePlaceholder, String versionNote) {
+        ApplicationProfileEntity profile = applicationProfileRepository.findById(applicationProfileId)
+            .orElseThrow(() -> new EntityNotFoundException("ApplicationProfile not found with id: " + applicationProfileId));
 
-        List<ConfigPropertyEntity> configs = configPropertyRepository.findAllByApplicationProfileId(profileId);
-
-        // Tạo danh sách các config chi tiết
-        List<Map<String, String>> configList = configs.stream().map(cfg -> {
-            Map<String, String> map = new LinkedHashMap<>();
-            map.put("applicationProfileId", cfg.getApplicationProfile().toString());
-            map.put("key", cfg.getKey());
-            map.put("value", cfg.getValue());
-            map.put("format", cfg.getFormat());
-            map.put("description", cfg.getDescription());
-            return map;
-        }).collect(Collectors.toList());
+        List<ConfigPropertyEntity> configs = configPropertyRepository.findAllByApplicationProfileId(applicationProfileId);
 
         // Chuyển danh sách thành JSON string
         String snapshotJson;
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            snapshotJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(configList);
+            // Convert entities to DTOs first to avoid circular references
+            List<ConfigPropertySnapshotDto> configDtos = configs.stream()
+                .map(configPropertyMapper::convertEntityToSnapshotDto)
+                .collect(Collectors.toList());
+            // Use the already injected objectMapper
+            snapshotJson = objectMapper.writeValueAsString(configDtos);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Error serializing config snapshot", e);
         }
@@ -156,21 +179,85 @@ public class ConfigVersionService {
         if (snapshotJson.length() > 1000000) { // 1MB limit
             throw new RuntimeException("Config snapshot too large");
         }
+        
+        String snapshotHash = calculateHash(snapshotJson);
+        log.info("Hash = {}, Length = {}", snapshotHash, snapshotHash.length());
+
+        List<ConfigVersionEntity> configVersionEntities = configVersionRepository.findAll();
+
+        for (ConfigVersionEntity configVersionEntity : configVersionEntities) {
+            if (snapshotHash.equals(configVersionEntity.getSnapshotHash())) {
+                log.warn("Found the same config backup with hash: " + snapshotHash + ", ignoring...");
+                return;
+            }
+        }
 
         // Tạo bản ghi snapshot
         ConfigVersionEntity version = new ConfigVersionEntity();
         version.setApplicationProfile(profile);
         version.setConfigSnapshot(snapshotJson);
+        version.setSnapshotHash(snapshotHash);
         version.setVersionNote(versionNote);
         version.setCreatedBy(usernamePlaceholder); // Placeholder
         version.setCreatedAt(LocalDateTime.now());
 
         try {
             configVersionRepository.save(version);
-            log.info("Config snapshot saved successfully for profile {}", profileId);
+            log.info("Config snapshot saved successfully for profile {}", applicationProfileId);
         } catch (Exception e) {
-            log.error("Error saving config snapshot for profile {}", profileId, e);
+            log.error("Error saving config snapshot for profile {}", applicationProfileId, e);
             throw new RuntimeException("Error saving config snapshot", e);
         }
+    }
+
+    @Transactional
+    public List<ConfigPropertyDto> restoreSnapshot(Long configVersionId) {
+        ConfigVersionEntity configVersionEntity = configVersionRepository.findById(configVersionId)
+            .orElseThrow(() -> new EntityNotFoundException("Version not found with id: " + configVersionId));
+
+        Long applicationProfileId = configVersionEntity.getApplicationProfile().getId();
+        
+        criteriaQueryHelper.deleteByJoinFilter(entityManager, ConfigPropertyEntity.class, "applicationProfile", "id", applicationProfileId);
+
+
+        // Deserialize configSnapshot
+        List<Map<String, Object>> configs;
+        try {
+            configs = objectMapper.readValue(
+                configVersionEntity.getConfigSnapshot(), new TypeReference<List<Map<String, Object>>>() {}
+            );
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error deserializing config snapshot", e);
+        }
+
+        List<ConfigPropertyEntity> restoredEntities = configs.stream().map(item -> {
+            ConfigPropertyEntity entity = new ConfigPropertyEntity();
+            entity.setApplicationProfile(configVersionEntity.getApplicationProfile());
+            entity.setKey((String) item.get("key"));
+            entity.setValue((String) item.get("value"));
+            entity.setFormat((String) item.get("format"));
+            entity.setDescription((String) item.get("description"));
+            entity.setCreatedAt(LocalDateTime.now());
+            entity.setUpdatedAt(LocalDateTime.now());
+            return entity;
+        }).toList();
+        
+        List<ConfigPropertyEntity> savingEntities = configPropertyRepository.saveAll(restoredEntities);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        // Thread.sleep(100); // 100ms delay
+                        refreshBusEndpoint.busRefreshWithDestination(new String[]{"**"});
+                        log.info("Bus refresh sent successfully");
+                    } catch (Exception e) {
+                        log.error("Failed to send bus refresh", e);
+                    }
+                });
+            }
+        });
+
+        return savingEntities.stream().map(configPropertyMapper::convertEntityToDto).collect(Collectors.toList());
     }
 }

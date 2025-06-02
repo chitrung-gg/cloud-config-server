@@ -7,6 +7,7 @@ import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -42,6 +43,9 @@ public class ConfigVersionEntity {
     private String versionNote;
 
     private String createdBy;
+
+    @Column(length = 64) // SHA-256
+    private String snapshotHash;
 
     @CreatedDate
     private LocalDateTime createdAt;
