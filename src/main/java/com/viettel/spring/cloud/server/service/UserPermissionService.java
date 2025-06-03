@@ -16,11 +16,11 @@ import com.viettel.spring.cloud.server.dto.userpermission.UpdateUserPermissionDt
 import com.viettel.spring.cloud.server.entity.ApplicationProfileEntity;
 import com.viettel.spring.cloud.server.entity.UserEntity;
 import com.viettel.spring.cloud.server.entity.UserPermissionEntity;
-import com.viettel.spring.cloud.server.helper.CriteriaQueryHelper;
 import com.viettel.spring.cloud.server.mapper.UserPermissionMapper;
 import com.viettel.spring.cloud.server.repository.ApplicationProfileRepository;
 import com.viettel.spring.cloud.server.repository.UserPermissionRepository;
 import com.viettel.spring.cloud.server.repository.UserRepository;
+import com.viettel.spring.cloud.server.util.CriteriaQueryUtil;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
@@ -45,7 +45,7 @@ public class UserPermissionService {
     private final UserPermissionMapper userPermissionMapper;
 
     @Autowired
-    private final CriteriaQueryHelper criteriaQueryHelper;
+    private final CriteriaQueryUtil criteriaQueryHelper;
 
     @Autowired
     private final EntityManager entityManager;

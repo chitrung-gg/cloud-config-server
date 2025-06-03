@@ -15,10 +15,10 @@ import com.viettel.spring.cloud.server.dto.applicationprofile.CreateApplicationP
 import com.viettel.spring.cloud.server.dto.applicationprofile.UpdateApplicationProfileDto;
 import com.viettel.spring.cloud.server.entity.ApplicationEntity;
 import com.viettel.spring.cloud.server.entity.ApplicationProfileEntity;
-import com.viettel.spring.cloud.server.helper.CriteriaQueryHelper;
 import com.viettel.spring.cloud.server.mapper.ApplicationProfileMapper;
 import com.viettel.spring.cloud.server.repository.ApplicationProfileRepository;
 import com.viettel.spring.cloud.server.repository.ApplicationRepository;
+import com.viettel.spring.cloud.server.util.CriteriaQueryUtil;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
@@ -40,7 +40,7 @@ public class ApplicationProfileService {
     private final ApplicationProfileMapper applicationProfileMapper;
 
     @Autowired
-    private final CriteriaQueryHelper criteriaQueryHelper;
+    private final CriteriaQueryUtil criteriaQueryHelper;
 
     @Autowired
     private final EntityManager entityManager;

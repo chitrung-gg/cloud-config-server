@@ -29,12 +29,12 @@ import com.viettel.spring.cloud.server.dto.configversion.UpdateConfigVersionDto;
 import com.viettel.spring.cloud.server.entity.ApplicationProfileEntity;
 import com.viettel.spring.cloud.server.entity.ConfigPropertyEntity;
 import com.viettel.spring.cloud.server.entity.ConfigVersionEntity;
-import com.viettel.spring.cloud.server.helper.CriteriaQueryHelper;
 import com.viettel.spring.cloud.server.mapper.ConfigPropertyMapper;
 import com.viettel.spring.cloud.server.mapper.ConfigVersionMapper;
 import com.viettel.spring.cloud.server.repository.ApplicationProfileRepository;
 import com.viettel.spring.cloud.server.repository.ConfigPropertyRepository;
 import com.viettel.spring.cloud.server.repository.ConfigVersionRepository;
+import com.viettel.spring.cloud.server.util.CriteriaQueryUtil;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
@@ -63,7 +63,7 @@ public class ConfigVersionService {
     private final ConfigPropertyMapper configPropertyMapper;
 
     @Autowired
-    private final CriteriaQueryHelper criteriaQueryHelper;
+    private final CriteriaQueryUtil criteriaQueryHelper;
 
     @Autowired
     private final EntityManager entityManager;

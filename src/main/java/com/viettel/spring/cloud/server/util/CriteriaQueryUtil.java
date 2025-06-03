@@ -1,4 +1,4 @@
-package com.viettel.spring.cloud.server.helper;
+package com.viettel.spring.cloud.server.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,7 +19,7 @@ import jakarta.transaction.Transactional;
 import jakarta.persistence.criteria.Predicate;
 
 @Component
-public class CriteriaQueryHelper {
+public class CriteriaQueryUtil {
     public <T> List<T> findByJoinFilters(EntityManager em, Class<T> entityClass, String joinField, String joinColumn, Object value) {
 
         CriteriaBuilder cb = em.getCriteriaBuilder();
