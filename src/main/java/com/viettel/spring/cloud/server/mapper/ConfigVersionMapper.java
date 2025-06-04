@@ -28,12 +28,14 @@ public interface ConfigVersionMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "applicationProfile", ignore = true)
+    @Mapping(target = "snapshotHash", ignore = true)
     ConfigVersionEntity convertCreateDtoToEntity(CreateConfigVersionDto createConfigVersionDto);
     
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "applicationProfile", ignore = true)
+    @Mapping(target = "snapshotHash", ignore = true)
     ConfigVersionEntity convertUpdateDtoToEntity(UpdateConfigVersionDto updateConfigVersionDto);
     
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
@@ -41,6 +43,7 @@ public interface ConfigVersionMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "applicationProfile", ignore = true)
+    @Mapping(target = "snapshotHash", ignore = true)
     void updateEntityFromDto(UpdateConfigVersionDto updateConfigVersionDto, @MappingTarget ConfigVersionEntity configVersionEntity);
     
 }

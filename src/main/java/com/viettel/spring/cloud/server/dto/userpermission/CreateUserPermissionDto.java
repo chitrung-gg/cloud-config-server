@@ -1,7 +1,5 @@
 package com.viettel.spring.cloud.server.dto.userpermission;
 
-import java.util.List;
-
 import com.viettel.spring.cloud.server.entity.UserPermissionEntity;
 
 import jakarta.validation.constraints.NotNull;
@@ -22,5 +20,5 @@ public class CreateUserPermissionDto {
     private Long applicationProfileId;
 
     @NotNull
-    private List<UserPermissionEntity.Permission> permission;
+    private UserPermissionEntity.Permission permission;
 }

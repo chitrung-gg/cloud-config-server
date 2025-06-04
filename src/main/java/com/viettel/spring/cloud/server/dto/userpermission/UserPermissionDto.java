@@ -1,7 +1,6 @@
 package com.viettel.spring.cloud.server.dto.userpermission;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import com.viettel.spring.cloud.server.dto.applicationprofile.ApplicationProfileDto;
 import com.viettel.spring.cloud.server.dto.user.UserDto;
@@ -26,7 +25,7 @@ public class UserPermissionDto {
     private ApplicationProfileDto applicationProfile;
 
     @NotNull
-    private List<UserPermissionEntity.Permission> permission;
+    private UserPermissionEntity.Permission permission;
 
     @PastOrPresent
     private LocalDateTime createdAt;

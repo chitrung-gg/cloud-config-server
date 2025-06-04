@@ -1,7 +1,6 @@
 package com.viettel.spring.cloud.server.entity;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -45,7 +44,7 @@ public class UserPermissionEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private List<Permission> permission;
+    private Permission permission;
 
     @CreatedDate
     private LocalDateTime createdAt;

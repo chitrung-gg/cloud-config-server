@@ -1,7 +1,5 @@
 package com.viettel.spring.cloud.server.dto.userpermission;
 
-import java.util.List;
-
 import com.viettel.spring.cloud.server.entity.UserPermissionEntity;
 
 import lombok.AllArgsConstructor;
@@ -18,5 +16,5 @@ public class UpdateUserPermissionDto {
 
     private Long applicationProfileId;
 
-    private List<UserPermissionEntity.Permission> permission;
+    private UserPermissionEntity.Permission permission;
 }
