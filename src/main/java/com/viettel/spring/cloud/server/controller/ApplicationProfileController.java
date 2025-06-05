@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.viettel.spring.cloud.server.dto.applicationprofile.ApplicationProfileDto;
 import com.viettel.spring.cloud.server.dto.applicationprofile.CreateApplicationProfileDto;
 import com.viettel.spring.cloud.server.dto.applicationprofile.UpdateApplicationProfileDto;
+import com.viettel.spring.cloud.server.security.CustomUserDetails;
 import com.viettel.spring.cloud.server.service.ApplicationProfileService;
 
 import jakarta.validation.Valid;
@@ -29,14 +32,16 @@ public class ApplicationProfileController {
     @Autowired
     private final ApplicationProfileService applicationProfileService;
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
-    public ResponseEntity<List<ApplicationProfileDto>> getAllApplicationProfiles() {
-        return ResponseEntity.status(HttpStatus.OK).body(applicationProfileService.getAllApplicationProfiles());
+    public ResponseEntity<List<ApplicationProfileDto>> getAllApplicationProfiles(Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.OK).body(applicationProfileService.getAllApplicationProfiles((CustomUserDetails) authentication.getPrincipal()));
     }
-
+    
     @GetMapping("/{id}")
-    public ResponseEntity<ApplicationProfileDto> getApplicationProfileById(@PathVariable Long id) {
-        return ResponseEntity.of(applicationProfileService.getApplicationProfileById(id));
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApplicationProfileDto> getApplicationProfileById(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.of(applicationProfileService.getApplicationProfileById(id, (CustomUserDetails) authentication.getPrincipal()));
     }
 
     @GetMapping("/label/{label}")

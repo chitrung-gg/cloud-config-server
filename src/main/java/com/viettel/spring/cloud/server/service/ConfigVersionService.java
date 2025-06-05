@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.bus.endpoint.RefreshBusEndpoint;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -155,7 +156,7 @@ public class ConfigVersionService {
         }
     }
 
-    
+    @Async
     public void saveSnapshot(Long applicationProfileId, String usernamePlaceholder, String versionNote) {
         ApplicationProfileEntity profile = applicationProfileRepository.findById(applicationProfileId)
             .orElseThrow(() -> new EntityNotFoundException("ApplicationProfile not found with id: " + applicationProfileId));

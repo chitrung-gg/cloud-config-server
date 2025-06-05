@@ -1,13 +1,12 @@
 package com.viettel.spring.cloud.server.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,17 +15,12 @@ import org.springframework.stereotype.Service;
 import com.viettel.spring.cloud.server.dto.authentication.AuthenticationRequestDto;
 import com.viettel.spring.cloud.server.dto.authentication.AuthenticationResponseDto;
 import com.viettel.spring.cloud.server.dto.authentication.RegisterRequestDto;
-import com.viettel.spring.cloud.server.dto.user.CreateUserDto;
-import com.viettel.spring.cloud.server.dto.user.UpdateUserDto;
-import com.viettel.spring.cloud.server.dto.user.UserDto;
 import com.viettel.spring.cloud.server.entity.UserEntity;
 import com.viettel.spring.cloud.server.mapper.AuthenticationMapper;
 import com.viettel.spring.cloud.server.mapper.CustomUserDetailsMapper;
-import com.viettel.spring.cloud.server.mapper.UserMapper;
 import com.viettel.spring.cloud.server.repository.UserRepository;
 import com.viettel.spring.cloud.server.security.JwtTokenService;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,11 +28,11 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
-    @Autowired
-    private final UserRepository userRepository;
+    @Value("${JWT_EXPIRY_TIME}")
+    private Long expiryTime;
 
     @Autowired
-    private final UserMapper userMapper;
+    private final UserRepository userRepository;
 
     @Autowired
     private final AuthenticationMapper authenticationMapper;
@@ -70,7 +64,12 @@ public class AuthenticationService {
 
         String token = jwtTokenService.generateToken(customUserDetailsMapper.convertEntityToCustomDetails(userEntity));
 
-        return Optional.of(new AuthenticationResponseDto(token));
+        logger.info("Token generated for " + userEntity.getUsername());
+        AuthenticationResponseDto authenticationResponseDto = new AuthenticationResponseDto();
+
+        authenticationResponseDto.setAccessToken(token);
+        authenticationResponseDto.setExpiryTime(expiryTime);
+        return Optional.of(authenticationResponseDto);
     }
 
     public Optional<RegisterRequestDto> register(RegisterRequestDto registerRequestDto) {

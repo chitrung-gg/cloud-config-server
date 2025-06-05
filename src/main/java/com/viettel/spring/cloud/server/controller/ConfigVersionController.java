@@ -36,8 +36,9 @@ public class ConfigVersionController {
     public ResponseEntity<List<ConfigVersionDto>> getAllConfigProperties() {
         return ResponseEntity.status(HttpStatus.OK).body(configVersionService.getAllConfigProperties());
     }
-
+    
     @GetMapping("/{id}")
+    @PreAuthorize("hasPermission(null, 'READ')")
     public ResponseEntity<ConfigVersionDto> getConfigVersionById(@PathVariable Long id) {
         return ResponseEntity.of(configVersionService.getConfigVersionById(id));
     }

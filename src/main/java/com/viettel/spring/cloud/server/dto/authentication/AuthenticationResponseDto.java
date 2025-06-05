@@ -1,6 +1,7 @@
 package com.viettel.spring.cloud.server.dto.authentication;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,6 +15,9 @@ public class AuthenticationResponseDto {
     @NotBlank
     private String accessToken;
     
-    // @NotBlank
-    // private String tokenType = "Bearer";
+    @NotNull
+    private Long expiryTime;
+
+    @NotBlank
+    private String tokenType = "Bearer";
 }

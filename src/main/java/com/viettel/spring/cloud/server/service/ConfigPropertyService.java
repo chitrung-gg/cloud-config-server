@@ -13,6 +13,7 @@ import org.springframework.cloud.bus.endpoint.RefreshBusEndpoint;
 import org.springframework.cloud.bus.event.Destination;
 import org.springframework.cloud.bus.event.RefreshRemoteApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -99,17 +100,25 @@ public class ConfigPropertyService {
         configPropertyEntity.setCreatedAt(LocalDateTime.now());
         configPropertyEntity.setUpdatedAt(LocalDateTime.now());
 
-        configVersionService.saveSnapshot(configPropertyEntity.getApplicationProfile().getId(), "Tesstt", "Time: " + configPropertyEntity.getApplicationProfile().getUpdatedAt());
-        
         ConfigPropertyEntity createdConfigPropertyEntity = configPropertyRepository.save(configPropertyEntity);
-        // Use Destination.ServiceMatcher for broadcast
-        Destination destination = null; // null = broadcast
-        applicationEventPublisher.publishEvent(new RefreshRemoteApplicationEvent(
-            this,
-            "config-server",                       // Tên ứng dụng phát đi (trùng spring.application.name)
-            destination     
-        ));
 
+        configVersionService.saveSnapshot(createdConfigPropertyEntity.getApplicationProfile().getId(), "Tesstt", "Time: " + configPropertyEntity.getApplicationProfile().getUpdatedAt());
+        
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Async
+            @Override
+            public void afterCommit() {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        // Thread.sleep(100); // 100ms delay
+                        refreshBusEndpoint.busRefreshWithDestination(new String[]{"**"});
+                        log.info("Bus refresh sent successfully");
+                    } catch (Exception e) {
+                        log.error("Failed to send bus refresh", e);
+                    }
+                });
+            }
+        });
         return configPropertyMapper.convertEntityToCreateDto(createdConfigPropertyEntity);
     }
 
@@ -124,15 +133,17 @@ public class ConfigPropertyService {
                         configPropertyEntity.setApplicationProfile(applicationProfileEntity);
                     }
 
-                    configVersionService.saveSnapshot(configPropertyEntity.getApplicationProfile().getId(), "Tesstt", "Time: " + configPropertyEntity.getApplicationProfile().getUpdatedAt());
                     
                     configPropertyMapper.updateEntityFromDto(updateConfigPropertyDto, configPropertyEntity);
-
+                    
                     configPropertyEntity.setUpdatedAt(LocalDateTime.now());
-
+                    
                     ConfigPropertyEntity updatedConfigPropertyEntity = configPropertyRepository.save(configPropertyEntity);
 
+                    configVersionService.saveSnapshot(updatedConfigPropertyEntity.getApplicationProfile().getId(), "Tesstt", "Time: " + configPropertyEntity.getApplicationProfile().getUpdatedAt());
+
                     TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Async
                         @Override
                         public void afterCommit() {
                             CompletableFuture.runAsync(() -> {
