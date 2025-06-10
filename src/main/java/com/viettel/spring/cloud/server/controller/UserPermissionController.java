@@ -63,4 +63,10 @@ public class UserPermissionController {
     public ResponseEntity<List<UserPermissionDto>> getProfilesByUserId(@PathVariable Long userId) {
         return ResponseEntity.status(HttpStatus.OK).body(userPermissionService.findUserPermissionByUserId(userId));
     }
+
+    @PostMapping("/batch/{userId}")
+    public ResponseEntity<Void> grantUserPermissions(@PathVariable Long userId) {
+        userPermissionService.grantDefaultPermissions(userId);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
 }

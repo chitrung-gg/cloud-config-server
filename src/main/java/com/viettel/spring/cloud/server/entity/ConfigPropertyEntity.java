@@ -25,7 +25,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "config_properties", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"key"})
+    @UniqueConstraint(columnNames = {"key", "profile_id"})
 })
 public class ConfigPropertyEntity {
     @Id

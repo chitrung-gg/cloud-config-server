@@ -10,9 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.bus.endpoint.RefreshBusEndpoint;
-import org.springframework.cloud.bus.event.Destination;
-import org.springframework.cloud.bus.event.RefreshRemoteApplicationEvent;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -21,6 +18,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import com.viettel.spring.cloud.server.dto.configproperty.ConfigPropertyDto;
 import com.viettel.spring.cloud.server.dto.configproperty.CreateConfigPropertyDto;
 import com.viettel.spring.cloud.server.dto.configproperty.UpdateConfigPropertyDto;
+import com.viettel.spring.cloud.server.dto.configversion.CreateConfigVersionDto;
 import com.viettel.spring.cloud.server.entity.ApplicationProfileEntity;
 import com.viettel.spring.cloud.server.entity.ConfigPropertyEntity;
 import com.viettel.spring.cloud.server.mapper.ConfigPropertyMapper;
@@ -55,9 +53,6 @@ public class ConfigPropertyService {
 
     @Autowired
     private final ConfigVersionService configVersionService;
-
-    @Autowired
-    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
     private final RefreshBusEndpoint refreshBusEndpoint;
@@ -102,7 +97,10 @@ public class ConfigPropertyService {
 
         ConfigPropertyEntity createdConfigPropertyEntity = configPropertyRepository.save(configPropertyEntity);
 
-        configVersionService.saveSnapshot(createdConfigPropertyEntity.getApplicationProfile().getId(), "Tesstt", "Time: " + configPropertyEntity.getApplicationProfile().getUpdatedAt());
+        configVersionService.saveSnapshot(new CreateConfigVersionDto(
+            createdConfigPropertyEntity.getApplicationProfile().getId(),
+            "Time: " + createdConfigPropertyEntity.getApplicationProfile().getUpdatedAt())
+        );
         
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Async
@@ -140,7 +138,9 @@ public class ConfigPropertyService {
                     
                     ConfigPropertyEntity updatedConfigPropertyEntity = configPropertyRepository.save(configPropertyEntity);
 
-                    configVersionService.saveSnapshot(updatedConfigPropertyEntity.getApplicationProfile().getId(), "Tesstt", "Time: " + configPropertyEntity.getApplicationProfile().getUpdatedAt());
+                    configVersionService.saveSnapshot(new CreateConfigVersionDto(
+                        updatedConfigPropertyEntity.getApplicationProfile().getId(), "Time: " + updatedConfigPropertyEntity.getApplicationProfile().getUpdatedAt())
+                    );
 
                     TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                         @Async

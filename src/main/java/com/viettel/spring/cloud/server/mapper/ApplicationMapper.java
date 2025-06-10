@@ -11,7 +11,7 @@ import com.viettel.spring.cloud.server.dto.application.CreateApplicationDto;
 import com.viettel.spring.cloud.server.dto.application.UpdateApplicationDto;
 import com.viettel.spring.cloud.server.entity.ApplicationEntity;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {ApplicationMetadataMapper.class})
 public interface ApplicationMapper {
     ApplicationDto convertEntityToDto(ApplicationEntity applicationEntity);
 
@@ -19,6 +19,7 @@ public interface ApplicationMapper {
 
     UpdateApplicationDto convertEntityToUpdateDto(ApplicationEntity applicationEntity);
 
+    @Mapping(target = "metadata.application", ignore = true)
     @Mapping(target = "applicationProfile", ignore = true)
     ApplicationEntity convertDtoToEntity(ApplicationDto applicationDto);
     
@@ -26,12 +27,14 @@ public interface ApplicationMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "applicationProfile", ignore = true)
+    @Mapping(target = "metadata", ignore = true)
     ApplicationEntity convertCreateDtoToEntity(CreateApplicationDto createApplicationDto);
     
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "applicationProfile", ignore = true)
+    @Mapping(target = "metadata", ignore = true)
     ApplicationEntity convertUpdateDtoToEntity(UpdateApplicationDto updateApplicationDto);
     
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
@@ -39,5 +42,6 @@ public interface ApplicationMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "applicationProfile", ignore = true)
+    @Mapping(target = "metadata", ignore = true)
     void updateEntityFromDto(UpdateApplicationDto updateApplicationDto, @MappingTarget ApplicationEntity applicationEntity);
 }

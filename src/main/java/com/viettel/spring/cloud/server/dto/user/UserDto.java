@@ -2,6 +2,7 @@ package com.viettel.spring.cloud.server.dto.user;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.viettel.spring.cloud.server.entity.UserEntity;
 
 import jakarta.validation.constraints.Email;
@@ -38,8 +39,10 @@ public class UserDto {
     private UserEntity.Role role;
 
     @PastOrPresent
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 
     @FutureOrPresent
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
 }

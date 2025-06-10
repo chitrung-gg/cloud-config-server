@@ -1,5 +1,6 @@
 package com.viettel.spring.cloud.server.exception;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -20,6 +21,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
@@ -39,8 +41,27 @@ public class GlobalExceptionHandler {
         Map<String, Object> response = new HashMap<>();
         response.put("status", HttpStatus.FORBIDDEN.value());
         response.put("error", "Forbidden");
-        response.put("message", "You do not have permission to access this resource.");
+        response.put("message", ex.getMessage());
+        response.put("timestamp", LocalDateTime.now());
+        
+        logger.warn("Access denied: {}", ex.getMessage());
+        
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoHandlerFoundException(NoHandlerFoundException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", HttpStatus.NOT_FOUND.value());
+        response.put("error", "Not Found");
+        response.put("message", "No endpoint found for " + ex.getHttpMethod() + " " + ex.getRequestURL());
+        response.put("requestedPath", ex.getRequestURL());
+        response.put("httpMethod", ex.getHttpMethod());
+        
+        logger.warn("No handler found for {} {}", ex.getHttpMethod(), ex.getRequestURL());
+        
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(AuthenticationException.class)

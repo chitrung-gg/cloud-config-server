@@ -8,24 +8,36 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.viettel.spring.cloud.server.entity.UserEntity;
 import com.viettel.spring.cloud.server.entity.UserEntity.Role;
 import com.viettel.spring.cloud.server.entity.UserPermissionEntity;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @AllArgsConstructor
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.CLASS,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "@class"
+)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CustomUserDetails implements UserDetails 
-{
-    private final Long id;
-    private final String username;
-    private final String password;
-    private final Role role;
-    private final Collection<? extends GrantedAuthority> authorities;
+{    private Long id;
+    private String username;
+    private String password;
+    private Role role;
+    
+    private Collection<? extends GrantedAuthority> authorities;
 
     public static CustomUserDetails fromUserEntity(UserEntity userEntity, List<UserPermissionEntity> userPermissionEntity) {
         List<GrantedAuthority> authorities = userPermissionEntity.stream()
@@ -41,25 +53,29 @@ public class CustomUserDetails implements UserDetails
             userEntity.getRole(),
             authorities
         );
-    }
-
-    @Override 
-    public boolean isAccountNonExpired() { 
-        return true; 
-    }
-
-    @Override 
-    public boolean isAccountNonLocked() { 
-        return true; 
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+    }    
     
-    @Override
-    public boolean isEnabled() {
-        return true; 
-    }
+    // @Override 
+    // @JsonIgnore
+    // public boolean isAccountNonExpired() { 
+    //     return true; 
+    // }
+
+    // @Override 
+    // @JsonIgnore
+    // public boolean isAccountNonLocked() { 
+    //     return true; 
+    // }
+
+    // @Override
+    // @JsonIgnore
+    // public boolean isCredentialsNonExpired() {
+    //     return true;
+    // }
+    
+    // @Override
+    // @JsonIgnore
+    // public boolean isEnabled() {
+    //     return true; 
+    // }
 }

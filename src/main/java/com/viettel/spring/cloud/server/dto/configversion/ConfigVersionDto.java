@@ -2,6 +2,7 @@ package com.viettel.spring.cloud.server.dto.configversion;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.viettel.spring.cloud.server.dto.applicationprofile.ApplicationProfileDto;
 
 import jakarta.validation.constraints.FutureOrPresent;
@@ -32,9 +33,13 @@ public class ConfigVersionDto {
 
     private String snapshotHash;
 
+    private Boolean isNewlyCreated;
+
     @PastOrPresent
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 
     @FutureOrPresent
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
 }

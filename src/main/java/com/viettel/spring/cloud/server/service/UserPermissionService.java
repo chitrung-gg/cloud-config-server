@@ -1,6 +1,8 @@
 package com.viettel.spring.cloud.server.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -16,6 +18,7 @@ import com.viettel.spring.cloud.server.dto.userpermission.UpdateUserPermissionDt
 import com.viettel.spring.cloud.server.entity.ApplicationProfileEntity;
 import com.viettel.spring.cloud.server.entity.UserEntity;
 import com.viettel.spring.cloud.server.entity.UserPermissionEntity;
+import com.viettel.spring.cloud.server.entity.UserPermissionEntity.Permission;
 import com.viettel.spring.cloud.server.mapper.UserPermissionMapper;
 import com.viettel.spring.cloud.server.repository.ApplicationProfileRepository;
 import com.viettel.spring.cloud.server.repository.UserPermissionRepository;
@@ -143,5 +146,60 @@ public class UserPermissionService {
         return entities.stream()
             .map(userPermissionMapper::convertEntityToDto)
             .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void grantUserPermissions(Long userId, List<Long> applicationProfileIds, List<String> permissionTypes) {
+        List<UserPermissionEntity> permissions = new ArrayList<>();
+        UserEntity userEntity = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+
+        for (Long appProfileId : applicationProfileIds) {
+            ApplicationProfileEntity applicationProfileEntity = applicationProfileRepository.findById(appProfileId).orElseThrow(() -> new EntityNotFoundException("ApplicationProfile not found with id: " + appProfileId));
+
+            for (String permissionType : permissionTypes) {
+                UserPermissionEntity permission = new UserPermissionEntity();
+
+                permission.setUser(userEntity);
+                permission.setApplicationProfile(applicationProfileEntity);
+                permission.setPermission(Permission.valueOf(permissionType));
+                permission.setCreatedAt(LocalDateTime.now());
+                permission.setUpdatedAt(LocalDateTime.now());
+                permissions.add(permission);
+            }
+        }
+        
+        // ✅ Batch save all permissions at once
+        userPermissionRepository.saveAll(permissions);
+    }
+    
+    // ✅ Grant default permissions based on role
+    @Transactional
+    public void grantDefaultPermissions(Long userId) {
+        UserEntity userEntity = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+
+        List<String> defaultPermissions = getDefaultPermissionsByRole(userEntity.getRole().toString());
+        List<Long> allApplicationProfileIds = getAllApplicationProfileIds();
+        
+        grantUserPermissions(userId, allApplicationProfileIds, defaultPermissions);
+    }
+    
+    private List<String> getDefaultPermissionsByRole(String role) {
+        switch (role.toLowerCase()) {
+            case "admin":
+                return Arrays.asList("READ", "WRITE", "DELETE");
+            case "leader":
+                return Arrays.asList("READ", "WRITE", "DELETE");
+            case "developer":
+                return Arrays.asList("READ", "WRITE");
+            case "viewer":
+            default:
+                return Arrays.asList("READ");
+        }
+    }
+    
+    private List<Long> getAllApplicationProfileIds() {
+        return applicationProfileRepository.findAll().stream()
+                .map(ApplicationProfileEntity::getId)
+                .collect(Collectors.toList());
     }
 }

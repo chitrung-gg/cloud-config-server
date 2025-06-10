@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -15,6 +16,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.bus.endpoint.RefreshBusEndpoint;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -30,11 +34,17 @@ import com.viettel.spring.cloud.server.dto.configversion.UpdateConfigVersionDto;
 import com.viettel.spring.cloud.server.entity.ApplicationProfileEntity;
 import com.viettel.spring.cloud.server.entity.ConfigPropertyEntity;
 import com.viettel.spring.cloud.server.entity.ConfigVersionEntity;
+import com.viettel.spring.cloud.server.entity.UserEntity;
+import com.viettel.spring.cloud.server.entity.UserPermissionEntity;
 import com.viettel.spring.cloud.server.mapper.ConfigPropertyMapper;
 import com.viettel.spring.cloud.server.mapper.ConfigVersionMapper;
+import com.viettel.spring.cloud.server.mapper.CustomUserDetailsMapper;
+import com.viettel.spring.cloud.server.mapper.UserMapper;
 import com.viettel.spring.cloud.server.repository.ApplicationProfileRepository;
 import com.viettel.spring.cloud.server.repository.ConfigPropertyRepository;
 import com.viettel.spring.cloud.server.repository.ConfigVersionRepository;
+import com.viettel.spring.cloud.server.repository.UserPermissionRepository;
+import com.viettel.spring.cloud.server.security.CustomUserDetails;
 import com.viettel.spring.cloud.server.util.CriteriaQueryUtil;
 
 import jakarta.persistence.EntityManager;
@@ -64,6 +74,12 @@ public class ConfigVersionService {
     private final ConfigPropertyMapper configPropertyMapper;
 
     @Autowired
+    private final UserPermissionRepository userPermissionRepository;
+    
+    @Autowired
+    private final CustomUserDetailsMapper userDetailsMapper;
+
+    @Autowired
     private final CriteriaQueryUtil criteriaQueryHelper;
 
     @Autowired
@@ -76,6 +92,88 @@ public class ConfigVersionService {
     private final ObjectMapper objectMapper;
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigVersionService.class);
+
+    private String getCurrentUsername() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (authentication != null && authentication.isAuthenticated()) {
+                Object principal = authentication.getPrincipal();
+                
+                if (principal instanceof CustomUserDetails) {
+                    return ((CustomUserDetails) principal).getUsername();
+                } else if (principal instanceof String) {
+                    return (String) principal;
+                }
+            }
+            
+            log.warn("No authenticated user found, using 'system' as default");
+            return "system";
+            
+        } catch (Exception e) {
+            log.error("Error getting current username: {}", e.getMessage());
+            return "unknown";
+        }
+    }
+
+    private CustomUserDetails getCurrentUserDetails() {
+    try {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+            
+            if (principal instanceof CustomUserDetails) {
+                return (CustomUserDetails) principal;
+            }
+        }
+        
+        throw new AccessDeniedException("No authenticated user found");
+        
+    } catch (Exception e) {
+        log.error("Error getting current user details: {}", e.getMessage());
+        throw new AccessDeniedException("Authentication required");
+    }
+}
+    private boolean hasAllPermissions(CustomUserDetails userDetails, Long applicationProfileId, UserPermissionEntity.Permission... requiredPermissions) {
+        // Admin has all permissions
+        if (userDetails.getRole() == UserEntity.Role.ADMIN) {
+            return true;
+        }
+        
+        UserEntity user = userDetailsMapper.convertCustomDetailsToEntity(userDetails);
+        Set<UserPermissionEntity.Permission> requiredPermissionSet = Set.of(requiredPermissions);
+        
+        // Get user's permissions for this application profile
+        Set<UserPermissionEntity.Permission> userPermissions = userPermissionRepository.findByUser(user).stream()
+            .filter(p -> p.getApplicationProfile().getId().equals(applicationProfileId))
+            .map(UserPermissionEntity::getPermission)
+            .collect(Collectors.toSet());
+        
+        // Check if user has all required permissions
+        return userPermissions.containsAll(requiredPermissionSet);
+    }
+
+    private void checkRestorePermission(Long applicationProfileId) {
+        CustomUserDetails userDetails = getCurrentUserDetails();
+        
+        boolean hasAllPermissions = hasAllPermissions(
+            userDetails, 
+            applicationProfileId, 
+            UserPermissionEntity.Permission.READ,
+            UserPermissionEntity.Permission.WRITE,
+            UserPermissionEntity.Permission.DELETE
+        );
+        
+        if (!hasAllPermissions) {
+            log.warn("User {} with role {} denied restore access to profile {} - requires READ, WRITE, and DELETE permissions", 
+                    userDetails.getUsername(), userDetails.getRole(), applicationProfileId);
+            throw new AccessDeniedException("You need READ, WRITE, and DELETE permissions to restore configuration snapshots");
+        }
+        
+        log.info("User {} with role {} granted restore access to profile {}", 
+                userDetails.getUsername(), userDetails.getRole(), applicationProfileId);
+    }
 
     public List<ConfigVersionDto> getAllConfigProperties() {
         return configVersionRepository.findAll().stream()
@@ -156,12 +254,12 @@ public class ConfigVersionService {
         }
     }
 
-    @Async
-    public void saveSnapshot(Long applicationProfileId, String usernamePlaceholder, String versionNote) {
-        ApplicationProfileEntity profile = applicationProfileRepository.findById(applicationProfileId)
-            .orElseThrow(() -> new EntityNotFoundException("ApplicationProfile not found with id: " + applicationProfileId));
+    @Transactional
+    public ConfigVersionDto saveSnapshot(CreateConfigVersionDto createConfigVersionDto) {
+        ApplicationProfileEntity profile = applicationProfileRepository.findById(createConfigVersionDto.getApplicationProfileId())
+            .orElseThrow(() -> new EntityNotFoundException("ApplicationProfile not found with id: " + createConfigVersionDto.getApplicationProfileId()));
 
-        List<ConfigPropertyEntity> configs = configPropertyRepository.findAllByApplicationProfileId(applicationProfileId);
+        List<ConfigPropertyEntity> configs = configPropertyRepository.findAllByApplicationProfileId(createConfigVersionDto.getApplicationProfileId());
 
         // Chuyển danh sách thành JSON string
         String snapshotJson;
@@ -184,13 +282,15 @@ public class ConfigVersionService {
         String snapshotHash = calculateHash(snapshotJson);
         log.info("Hash = {}, Length = {}", snapshotHash, snapshotHash.length());
 
-        List<ConfigVersionEntity> configVersionEntities = configVersionRepository.findAll();
-
-        for (ConfigVersionEntity configVersionEntity : configVersionEntities) {
-            if (snapshotHash.equals(configVersionEntity.getSnapshotHash())) {
-                log.warn("Found the same config backup with hash: " + snapshotHash + ", ignoring...");
-                return;
-            }
+        Optional<ConfigVersionEntity> existingVersion = configVersionRepository.findBySnapshotHash(snapshotHash);
+    
+        if (existingVersion.isPresent()) {
+            log.warn("Found existing config backup with hash: {}, returning existing version", snapshotHash);
+            
+            // Convert existing entity to DTO and mark as existed
+            ConfigVersionDto existingDto = configVersionMapper.convertEntityToDto(existingVersion.get());
+            existingDto.setIsNewlyCreated(false);
+            return existingDto;
         }
 
         // Tạo bản ghi snapshot
@@ -198,17 +298,22 @@ public class ConfigVersionService {
         version.setApplicationProfile(profile);
         version.setConfigSnapshot(snapshotJson);
         version.setSnapshotHash(snapshotHash);
-        version.setVersionNote(versionNote);
-        version.setCreatedBy(usernamePlaceholder); // Placeholder
+        version.setVersionNote(createConfigVersionDto.getVersionNote());
+        version.setCreatedBy(getCurrentUsername()); // Placeholder
         version.setCreatedAt(LocalDateTime.now());
 
         try {
-            configVersionRepository.save(version);
-            log.info("Config snapshot saved successfully for profile {}", applicationProfileId);
+            ConfigVersionEntity savedVersion = configVersionRepository.save(version);
+            log.info("Config snapshot saved successfully for profile {}", createConfigVersionDto.getApplicationProfileId());
+
+            ConfigVersionDto savedVersionDto = configVersionMapper.convertEntityToDto(savedVersion);
+            savedVersionDto.setIsNewlyCreated(true);
+            return savedVersionDto;
         } catch (Exception e) {
-            log.error("Error saving config snapshot for profile {}", applicationProfileId, e);
+            log.error("Error saving config snapshot for profile {}", createConfigVersionDto.getApplicationProfileId(), e);
             throw new RuntimeException("Error saving config snapshot", e);
         }
+
     }
 
     @Transactional
@@ -218,6 +323,8 @@ public class ConfigVersionService {
 
         Long applicationProfileId = configVersionEntity.getApplicationProfile().getId();
         
+        checkRestorePermission(applicationProfileId);
+
         criteriaQueryHelper.deleteByJoinFilter(entityManager, ConfigPropertyEntity.class, "applicationProfile", "id", applicationProfileId);
 
 
@@ -259,6 +366,7 @@ public class ConfigVersionService {
             }
         });
 
+        log.info("Config restored successfully for profile {} by user {}", applicationProfileId, getCurrentUsername());
         return savingEntities.stream().map(configPropertyMapper::convertEntityToDto).collect(Collectors.toList());
     }
 }

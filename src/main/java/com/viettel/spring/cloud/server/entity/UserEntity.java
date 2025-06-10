@@ -56,7 +56,8 @@ public class UserEntity {
 
     public enum Role {
         ADMIN, 
-        EDITOR, 
+        LEADER,
+        DEVELOPER, 
         VIEWER
     }
 }

@@ -1,6 +1,9 @@
 package com.viettel.spring.cloud.server.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -37,6 +40,35 @@ public class ConfigVersionController {
         return ResponseEntity.status(HttpStatus.OK).body(configVersionService.getAllConfigProperties());
     }
     
+    // PUT SPECIFIC ENDPOINTS BEFORE PARAMETERIZED ONES
+    @GetMapping("/application-profile/{applicationProfileId}")
+    public ResponseEntity<List<ConfigVersionDto>> getProfilesByApplicationProfileId(@PathVariable Long applicationProfileId) {
+        return ResponseEntity.status(HttpStatus.OK).body(configVersionService.findConfigVersionByApplicationProfileId(applicationProfileId));
+    }
+
+    @PostMapping("/restore/{versionId}")
+    public ResponseEntity<List<ConfigPropertyDto>> restoreVersion(@PathVariable Long versionId) {
+        return ResponseEntity.status(HttpStatus.OK).body(configVersionService.restoreSnapshot(versionId));
+    }
+
+    @PostMapping("/generate")
+    public ResponseEntity<?> saveSnapshot(@RequestBody @Valid CreateConfigVersionDto createConfigVersionDto) {
+        ConfigVersionDto result = configVersionService.saveSnapshot(createConfigVersionDto);
+        
+        if (result.getIsNewlyCreated()) {
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
+        } else {
+            // Return custom response for duplicates
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Configuration snapshot already exists with the same content");
+            response.put("duplicate", true);
+            response.put("existingSnapshot", result);
+            
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        }
+    }
+
+    // PUT PARAMETERIZED ENDPOINTS LAST
     @GetMapping("/{id}")
     @PreAuthorize("hasPermission(null, 'READ')")
     public ResponseEntity<ConfigVersionDto> getConfigVersionById(@PathVariable Long id) {
@@ -56,15 +88,5 @@ public class ConfigVersionController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ConfigVersionDto> deleteConfigVersion(@PathVariable Long id) {
         return ResponseEntity.of(configVersionService.deleteConfigVersion(id));
-    }
-
-    @GetMapping("/application-profile/{applicationProfileId}")
-    public ResponseEntity<List<ConfigVersionDto>> getProfilesByApplicationProfileId(@PathVariable Long applicationProfileId) {
-        return ResponseEntity.status(HttpStatus.OK).body(configVersionService.findConfigVersionByApplicationProfileId(applicationProfileId));
-    }
-
-    @PostMapping("/{versionId}/restore")
-    public ResponseEntity<List<ConfigPropertyDto>> restoreVersion(@PathVariable Long versionId) {
-        return ResponseEntity.status(HttpStatus.OK).body(configVersionService.restoreSnapshot(versionId));
     }
 }

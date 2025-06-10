@@ -16,11 +16,5 @@ public class CreateConfigVersionDto {
     private Long applicationProfileId;
 
     @NotBlank
-    private String configSnapshot;
-
-    @NotBlank
     private String versionNote;
-
-    @NotBlank
-    private String createdBy;
 }

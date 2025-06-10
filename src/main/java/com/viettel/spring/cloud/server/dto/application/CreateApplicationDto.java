@@ -1,5 +1,8 @@
 package com.viettel.spring.cloud.server.dto.application;
 
+
+import com.viettel.spring.cloud.server.dto.applicationmetadata.ApplicationMetadataDto;
+
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,4 +19,11 @@ public class CreateApplicationDto {
 
     @NotBlank
     private String description;    
+
+    @NotBlank
+    private String version;
+
+    // @NotNull
+    // private List<String> tags;
+    private ApplicationMetadataDto metadata;
 }

@@ -1,6 +1,9 @@
 package com.viettel.spring.cloud.server.dto.authentication;
 
+import com.viettel.spring.cloud.server.entity.UserEntity;
+
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,6 +22,9 @@ public class RegisterRequestDto {
 
     @NotBlank
     private String email;
+
+    @NotNull
+    private UserEntity.Role role;
 
     @NotBlank
     private String password;

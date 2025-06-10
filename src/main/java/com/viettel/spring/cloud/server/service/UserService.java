@@ -8,7 +8,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import com.viettel.spring.cloud.server.dto.user.UserDto;
 import com.viettel.spring.cloud.server.dto.user.CreateUserDto;
@@ -33,6 +35,9 @@ public class UserService {
     @Autowired
     private final UserMapper userMapper;
 
+    @Autowired
+    private final PasswordEncoder passwordEncoder;
+
     // @Autowired
     // private final CriteriaQueryHelper criteriaQueryHelper;
 
@@ -40,6 +45,15 @@ public class UserService {
     // private final EntityManager entityManager;
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
+    private boolean isPasswordHashed(String password) {
+        if (password == null || password.isEmpty()) {
+            return false;
+        }
+        
+        // BCrypt hash pattern: starts with $2a$, $2b$, $2x$, $2y$ và có độ dài 60 ký tự
+        return password.matches("^\\$2[abxy]\\$\\d{2}\\$.{53}$") && password.length() == 60;
+    }
 
     public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream()
@@ -66,6 +80,11 @@ public class UserService {
     public CreateUserDto createUser(CreateUserDto createUserDto) {
         UserEntity userEntity = userMapper.convertCreateDtoToEntity(createUserDto);
 
+        // Hash password if provided and not already hashed
+        if (StringUtils.hasText(createUserDto.getPassword()) && !isPasswordHashed(createUserDto.getPassword())) {
+            userEntity.setPassword(passwordEncoder.encode(createUserDto.getPassword()));
+        }
+        
         userEntity.setCreatedAt(LocalDateTime.now());
         userEntity.setUpdatedAt(LocalDateTime.now());
 
@@ -79,6 +98,10 @@ public class UserService {
                 .map(userEntity -> {
 
                     userMapper.updateEntityFromDto(updateUserDto, userEntity);
+
+                    if (StringUtils.hasText(updateUserDto.getPassword()) && !isPasswordHashed(updateUserDto.getPassword())) {
+                        userEntity.setPassword(passwordEncoder.encode(updateUserDto.getPassword()));
+                    }
 
                     userEntity.setUpdatedAt(LocalDateTime.now());
 

@@ -1,12 +1,12 @@
-package com.viettel.spring.cloud.server.dto.application;
+package com.viettel.spring.cloud.server.dto.applicationmetadata;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.viettel.spring.cloud.server.dto.applicationmetadata.ApplicationMetadataDto;
 
 import jakarta.validation.constraints.FutureOrPresent;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,19 +17,35 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ApplicationDto {
+public class ApplicationMetadataDto {
+    @NotNull
     private Long id;
 
-    @NotBlank
-    private String name;
+    private Long applicationId;
 
-    @NotBlank
-    private String description;
+    private String owner;
 
-    @NotBlank
-    private String version;
+    private String team;
 
-    private ApplicationMetadataDto metadata;
+    private String environment;
+
+    private String category;
+
+    private String criticality;
+
+    private String documentation;
+
+    private String repository;
+
+    private String contact;
+
+    private String businessUnit;
+
+    private String costCenter;
+
+    private String maintenanceWindow;
+
+    private List<String> tags;
 
     @PastOrPresent
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

@@ -14,9 +14,14 @@ import com.viettel.spring.cloud.server.dto.application.ApplicationDto;
 import com.viettel.spring.cloud.server.dto.application.CreateApplicationDto;
 import com.viettel.spring.cloud.server.dto.application.UpdateApplicationDto;
 import com.viettel.spring.cloud.server.entity.ApplicationEntity;
+import com.viettel.spring.cloud.server.entity.ApplicationMetadataEntity;
+import com.viettel.spring.cloud.server.entity.ApplicationProfileEntity;
 import com.viettel.spring.cloud.server.mapper.ApplicationMapper;
+import com.viettel.spring.cloud.server.mapper.ApplicationMetadataMapper;
+import com.viettel.spring.cloud.server.repository.ApplicationMetadataRepository;
 import com.viettel.spring.cloud.server.repository.ApplicationRepository;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +35,12 @@ public class ApplicationService {
 
     @Autowired
     private final ApplicationMapper applicationMapper;
+
+    @Autowired
+    private final ApplicationMetadataRepository applicationMetadataRepository;
+
+    @Autowired
+    private final ApplicationMetadataMapper applicationMetadataMapper;
 
     private static final Logger logger = LoggerFactory.getLogger(ApplicationService.class);
 
@@ -54,6 +65,18 @@ public class ApplicationService {
         ApplicationEntity applicationEntity = applicationMapper.convertCreateDtoToEntity(createApplicationDto);
         applicationEntity.setCreatedAt(LocalDateTime.now());
         applicationEntity.setUpdatedAt(LocalDateTime.now());
+
+        ApplicationEntity savedApplicationEntity = applicationRepository.save(applicationEntity);
+        
+        if (createApplicationDto.getMetadata() != null) {
+            ApplicationMetadataEntity applicationMetadataEntity = applicationMetadataMapper.convertDtoToEntity(createApplicationDto.getMetadata());
+            applicationMetadataEntity.setApplication(savedApplicationEntity); // Set reference
+            applicationMetadataEntity.setCreatedAt(LocalDateTime.now());
+            applicationMetadataEntity.setUpdatedAt(LocalDateTime.now());
+            
+            ApplicationMetadataEntity savedMetadata = applicationMetadataRepository.save(applicationMetadataEntity);
+            savedApplicationEntity.setMetadata(savedMetadata);
+        }
         ApplicationEntity createdApplicationEntity = applicationRepository.save(applicationEntity);
         return applicationMapper.convertEntityToCreateDto(createdApplicationEntity);
     }
@@ -62,10 +85,31 @@ public class ApplicationService {
     public Optional<UpdateApplicationDto> updateApplication(Long id, UpdateApplicationDto updateApplicationDto) {
         return applicationRepository.findById(id)
                 .map(applicationEntity -> {
+                    // Cập nhật thông tin application
                     applicationMapper.updateEntityFromDto(updateApplicationDto, applicationEntity);
+                    applicationEntity.setUpdatedAt(LocalDateTime.now());
+
+                    // Xử lý metadata
+                    if (updateApplicationDto.getMetadata() != null) {
+                        if (applicationEntity.getMetadata() != null) {
+                            // Cập nhật metadata hiện có
+                            applicationMetadataMapper.updateEntityFromDto(updateApplicationDto.getMetadata(), applicationEntity.getMetadata());
+                            applicationEntity.getMetadata().setUpdatedAt(LocalDateTime.now());
+                        } else {
+                            // Tạo mới metadata nếu chưa có - sử dụng convertUpdateDtoToEntity
+                            ApplicationMetadataEntity newMetadata = applicationMetadataMapper.convertDtoToEntity(updateApplicationDto.getMetadata());
+
+                            newMetadata.setApplication(applicationEntity);
+                            newMetadata.setCreatedAt(LocalDateTime.now());
+                            newMetadata.setUpdatedAt(LocalDateTime.now());
+                            
+                            ApplicationMetadataEntity savedMetadata = applicationMetadataRepository.save(newMetadata);
+
+                            applicationEntity.setMetadata(savedMetadata);
+                        }
+                    }
 
                     ApplicationEntity updatedApplicationEntity = applicationRepository.save(applicationEntity);
-
                     return applicationMapper.convertEntityToUpdateDto(updatedApplicationEntity);
                 });
     }

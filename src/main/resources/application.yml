@@ -5,6 +5,16 @@ spring:
   application:
     name: server
 
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      write-date-timestamps-as-nanoseconds: false
+    deserialization:
+      adjust-dates-to-context-time-zone: false
+      read-date-timestamps-as-nanoseconds: false
+    time-zone: Asia/Ho_Chi_Minh
+    date-format: yyyy-MM-dd'T'HH:mm:ss
+    
   # datasource:
   #   url: jdbc:postgresql://localhost:5432/config_server
   #   username: postgres
@@ -39,6 +49,7 @@ spring:
         enabled: true
     config:
       server:
+        prefix: /config
         jdbc:
           enabled: false
         # git:
@@ -46,6 +57,26 @@ spring:
         #   clone-on-start: true
         #   default-label: main
         #   timeout: 10
+    # gateway:
+    #   routes:
+    #   - id: user-api
+    #     uri: http://localhost:${PORT}
+    #     predicates:
+    #       - Path=/users/**
+    #     filters:
+    #       - name: RequestRateLimiter
+    #         args:
+    #           key-resolver: "#{@userKeyResolver}" # custom resolver
+    #           '[redis-rate-limiter.replenishRate]': 5     # 5 requests per second
+    #           '[predis-rate-limiter.burstCapacity]': 10    # allow bursts up to 10
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+
+  cache:
+    type: redis
 
   rabbitmq:
     host: ${RABBITMQ_HOST}
@@ -66,29 +97,32 @@ resilience4j:
   retry:
     instances:
       customSetting:
-        max-attempts: 5
-        wait-duration: 2s
+        max-attempts: 10
+        wait-duration: 500ms
 
   circuitbreaker:
     instances:
       customSetting:
         register-health-indicator: true
-        sliding-window-type: COUNT_BASED
-        sliding-window-size: 10
-        minimum-number-of-calls: 5
+        sliding-window-size: 4
+        minimum-number-of-calls: 2
         failure-rate-threshold: 50
         wait-duration-in-open-state: 5s
         permitted-number-of-calls-in-half-open-state: 3
 
 springdoc:
+  cache:
+    disabled: true
   api-docs:
     path: ${OPENAPI_API_DOCS}
   swagger-ui:
+    # use-root-path: true
     path: ${OPENAPI_SWAGGER_UI}
 
 
 server:
-  port: 8088
+  port: ${PORT}
+  forward-headers-strategy: native
   servlet:
     context-path: ${CONTEXT_PATH}
 
@@ -103,6 +137,11 @@ management:
     busrefresh:
       access: unrestricted
 
+eureka:
+  client:
+    enabled: false
+    service-url: 
+      defaultZone: http://localhost:8761/eureka/
 # logging:
 #   file:
 #     name: configServer.log
@@ -110,3 +149,13 @@ logging:
   level:
     '[org.springframework.cloud.bus]': DEBUG
     '[org.springframework.amqp]': DEBUG
+    '[io.github.resilience4j]': DEBUG
+    '[org.springframework.cache]': DEBUG
+    '[org.springframework.data.redis.cache]': DEBUG
+    # org.springframework.security: DEBUG
+    # org.springframework.cache: DEBUG
+    # com.viettel.spring.cloud.server.security: DEBUG
+    # org.springframework.security.access: DEBUG
+    # org.springframework.security.web: DEBUG
+    # org.springframework.security.authentication: DEBUG
+    # org.springframework.security.authorization: DEBUG

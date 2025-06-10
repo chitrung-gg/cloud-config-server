@@ -1,17 +1,22 @@
 package com.viettel.spring.cloud.server.entity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -36,8 +41,14 @@ public class ApplicationEntity {
     @Column(nullable = false)
     private String description;
 
+    @Column(nullable = false)
+    private String version;
+
     @OneToMany(mappedBy = "application")
     private List<ApplicationProfileEntity> applicationProfile;
+
+    @OneToOne(mappedBy = "application")
+    private ApplicationMetadataEntity metadata;
 
     @CreatedDate
     private LocalDateTime createdAt;

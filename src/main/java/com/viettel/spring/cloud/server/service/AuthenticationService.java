@@ -82,7 +82,7 @@ public class AuthenticationService {
 
         UserEntity user = authenticationMapper.convertRegisterDtoToEntity(registerRequestDto);
         user.setPassword(passwordEncoder.encode(registerRequestDto.getPassword()));
-        user.setRole(UserEntity.Role.VIEWER); // 👈 Set mặc định
+        user.setRole(registerRequestDto.getRole()); 
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
