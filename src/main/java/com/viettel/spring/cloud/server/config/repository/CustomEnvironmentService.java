@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import com.viettel.spring.cloud.server.entity.ConfigPropertyEntity;
 
-import io.swagger.v3.oas.annotations.servers.Server;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -21,10 +20,10 @@ public class CustomEnvironmentService {
     @Autowired
     private final ConfigPropertyJpaRepository configPropertyRepository;
 
-    @Cacheable(
-        key = "#applicationName + '-' + #profile + '-' + (#label == null || #label.isEmpty() ? 'main' : #label)",
-        value = "cloudBusEndpoint"
-    )
+    // @Cacheable(
+    //     key = "#applicationName + '-' + #profile + '-' + (#label == null || #label.isEmpty() ? 'main' : #label)",
+    //     value = "cloudBusEndpoint"
+    // )
     public Environment findOne(String applicationName, String profile, String label) {
         System.out.println(">>> Cache MISS: fetching from DB for " + applicationName);
         String effectiveLabel = (label == null || label.isEmpty()) ? "main" : label;

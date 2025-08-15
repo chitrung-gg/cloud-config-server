@@ -19,13 +19,12 @@ import lombok.RequiredArgsConstructor;
 @Repository
 @RequiredArgsConstructor
 public class CustomJdbcEnvironmentRepository implements EnvironmentRepository{
-
-
     @Autowired
     private final CustomEnvironmentService customEnvironmentService;
 
     @Override
     public Environment findOne(String applicationName, String profile, String label) {
+        return customEnvironmentService.findOne(applicationName, profile, label);
         // String effectiveLabel = (label == null || label.isEmpty()) ? "main" : label;
 
         // List<ConfigPropertyEntity> configs = configPropertyRepository
@@ -43,6 +42,5 @@ public class CustomJdbcEnvironmentRepository implements EnvironmentRepository{
         // env.add(propertySource);
 
         // return env;
-        return customEnvironmentService.findOne(applicationName, profile, label);
     }
 }

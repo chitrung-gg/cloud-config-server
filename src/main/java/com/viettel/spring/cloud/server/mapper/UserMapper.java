@@ -14,12 +14,12 @@ import com.viettel.spring.cloud.server.entity.UserEntity;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
     UserDto convertEntityToDto(UserEntity userEntity);
+    UserEntity convertDtoToEntity(UserDto UserDto);
     
     CreateUserDto convertEntityToCreateDto(UserEntity UserEntity);
 
     UpdateUserDto convertEntityToUpdateDto(UserEntity UserEntity);
     
-    UserEntity convertDtoToEntity(UserDto UserDto);
     
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

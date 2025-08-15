@@ -49,7 +49,8 @@ public class SecurityConfig {
             .httpBasic(Customizer.withDefaults());
 
         return http.build();
-    }    // 👉 FilterChain 2: Dành cho toàn bộ phần còn lại
+    }    
+    
     @Bean
     @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -82,6 +83,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
         configuration.addAllowedOrigin("http://localhost:3000");
+        configuration.addAllowedOrigin("http://configserver-config-portal:3000");
+        configuration.addAllowedOrigin("http://configserver-gateway:8082");
+        configuration.addAllowedOrigin("http://localhost:8082");
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
         

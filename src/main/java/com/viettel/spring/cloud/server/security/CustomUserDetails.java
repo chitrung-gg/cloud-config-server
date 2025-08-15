@@ -31,8 +31,8 @@ import lombok.Setter;
     property = "@class"
 )
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CustomUserDetails implements UserDetails 
-{    private Long id;
+public class CustomUserDetails implements UserDetails {
+    private Long id;
     private String username;
     private String password;
     private Role role;
